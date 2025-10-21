@@ -1,9 +1,7 @@
-// Tower Defense Game Configuration
-const GRID_SIZE = 60;
+// Simple Tower Defense Configuration
+const GRID_SIZE = 50;
 const TOWER_COST = 50;
 const TOWER_UPGRADE_COST = 75;
-const BASE_ENEMY_HEALTH = 50;
-const BASE_ENEMY_SPEED = 1;
 
 // Canvas Setup
 const canvas = document.getElementById('gameCanvas');
@@ -33,52 +31,40 @@ let gameState = {
     enemiesPerWave: 5
 };
 
-// Path generation (enemies follow this)
+// Simple straight path
 function generatePath() {
     const path = [];
-    const cols = Math.floor(canvas.width / GRID_SIZE);
-    const rows = Math.floor(canvas.height / GRID_SIZE);
+    const y = canvas.height / 2;
+    const steps = 20;
     
-    let x = 0;
-    let y = Math.floor(rows / 2);
-    path.push({x: x * GRID_SIZE + GRID_SIZE/2, y: y * GRID_SIZE + GRID_SIZE/2});
-    
-    while (x < cols - 1) {
-        if (Math.random() > 0.7 && x > 0) {
-            const dir = Math.random() > 0.5 ? 1 : -1;
-            if (y + dir >= 0 && y + dir < rows) {
-                y += dir;
-                path.push({x: x * GRID_SIZE + GRID_SIZE/2, y: y * GRID_SIZE + GRID_SIZE/2});
-            }
-        }
-        x++;
-        path.push({x: x * GRID_SIZE + GRID_SIZE/2, y: y * GRID_SIZE + GRID_SIZE/2});
+    for (let i = 0; i <= steps; i++) {
+        path.push({
+            x: (canvas.width / steps) * i,
+            y: y
+        });
     }
     
     return path;
 }
 
-// Tower Class
+// Tower Class - Simple and clean
 class Tower {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.range = 150;
-        this.damage = 20;
-        this.fireRate = 1000; // ms
+        this.range = 120;
+        this.damage = 25;
+        this.fireRate = 800;
         this.lastFire = 0;
         this.level = 1;
-        this.hue = Math.random() * 360;
-        this.rotation = 0;
-        this.pulsePhase = Math.random() * Math.PI * 2;
     }
 
     upgrade() {
         if (gameState.money >= TOWER_UPGRADE_COST) {
             gameState.money -= TOWER_UPGRADE_COST;
             this.level++;
-            this.range += 30;
-            this.damage += 15;
+            this.range += 25;
+            this.damage += 20;
             this.fireRate = Math.max(300, this.fireRate - 100);
             return true;
         }
@@ -100,10 +86,6 @@ class Tower {
     }
 
     update(time) {
-        this.rotation += 0.02;
-        this.pulsePhase += 0.05;
-        this.hue = (this.hue + 0.5) % 360;
-        
         if (time - this.lastFire >= this.fireRate) {
             const target = this.findTarget();
             if (target) {
@@ -114,87 +96,61 @@ class Tower {
     }
 
     fire(target) {
-        gameState.projectiles.push(new Projectile(this.x, this.y, target, this.damage, this.hue));
+        gameState.projectiles.push(new Projectile(this.x, this.y, target, this.damage));
     }
 
     draw() {
-        const pulse = Math.sin(this.pulsePhase) * 0.2 + 1;
-        const size = (20 + this.level * 5) * pulse;
+        const size = 12 + this.level * 3;
         
-        // Draw range indicator when selected
+        // Range indicator when selected
         if (gameState.selectedTower === this) {
-            ctx.save();
-            ctx.strokeStyle = `hsla(${this.hue}, 100%, 50%, 0.3)`;
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(102, 153, 204, 0.3)';
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
         }
         
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
+        // Tower body - simple square
+        ctx.fillStyle = '#6699cc';
+        ctx.fillRect(this.x - size/2, this.y - size/2, size, size);
         
-        // Tower base
-        ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = `hsla(${this.hue}, 100%, 50%, 0.8)`;
+        // Border
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(this.x - size/2, this.y - size/2, size, size);
         
-        // Psychedelic tower shape
-        ctx.beginPath();
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const r = i % 2 === 0 ? size : size * 0.6;
-            const x = Math.cos(angle) * r;
-            const y = Math.sin(angle) * r;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        
-        // Inner core
-        ctx.fillStyle = `hsla(${(this.hue + 180) % 360}, 100%, 70%, 0.9)`;
-        ctx.beginPath();
-        ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Level indicator
+        // Level number
         ctx.fillStyle = '#000';
-        ctx.font = 'bold 12px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(this.level, 0, 0);
-        
-        ctx.restore();
+        ctx.fillText(this.level, this.x, this.y);
     }
 
     isClicked(mx, my) {
-        const dist = Math.sqrt((this.x - mx) ** 2 + (this.y - my) ** 2);
-        return dist < 20 + this.level * 5;
+        const size = 12 + this.level * 3;
+        return mx >= this.x - size/2 && mx <= this.x + size/2 &&
+               my >= this.y - size/2 && my <= this.y + size/2;
     }
 }
 
-// Enemy Class
+// Enemy Class - Simple
 class Enemy {
     constructor() {
         this.pathIndex = 0;
         this.x = gameState.path[0].x;
         this.y = gameState.path[0].y;
-        this.health = BASE_ENEMY_HEALTH * gameState.wave;
+        this.health = 50 + gameState.wave * 20;
         this.maxHealth = this.health;
-        this.speed = BASE_ENEMY_SPEED + gameState.wave * 0.1;
-        this.size = 15;
-        this.hue = Math.random() * 360;
-        this.rotation = Math.random() * Math.PI * 2;
-        this.morphPhase = Math.random() * Math.PI * 2;
+        this.speed = 1 + gameState.wave * 0.15;
+        this.size = 8;
     }
 
     update() {
         if (this.pathIndex >= gameState.path.length - 1) {
             gameState.health -= 10;
-            return false; // Enemy reached end
+            return false;
         }
         
         const target = gameState.path[this.pathIndex + 1];
@@ -213,10 +169,6 @@ class Enemy {
             this.y += (dy / dist) * this.speed;
         }
         
-        this.rotation += 0.05;
-        this.morphPhase += 0.03;
-        this.hue = (this.hue + 1) % 360;
-        
         return true;
     }
 
@@ -231,54 +183,37 @@ class Enemy {
     }
 
     draw() {
-        const morph = Math.sin(this.morphPhase) * 0.3 + 1;
-        
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-        
-        // Enemy body - morphing blob
-        ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
-        ctx.shadowBlur = 15;
-        ctx.fillStyle = `hsla(${this.hue}, 100%, 50%, 0.7)`;
-        
+        // Enemy body - simple circle
+        ctx.fillStyle = '#cc3333';
         ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
-            const r = this.size * (i % 2 === 0 ? morph : 1);
-            const x = Math.cos(angle) * r;
-            const y = Math.sin(angle) * r;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.restore();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
         
         // Health bar
-        const barWidth = 30;
-        const barHeight = 4;
+        const barWidth = 20;
+        const barHeight = 3;
         const healthPercent = this.health / this.maxHealth;
         
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(this.x - barWidth/2, this.y - this.size - 10, barWidth, barHeight);
+        ctx.fillRect(this.x - barWidth/2, this.y - this.size - 8, barWidth, barHeight);
         
-        ctx.fillStyle = `hsl(${healthPercent * 120}, 100%, 50%)`;
-        ctx.fillRect(this.x - barWidth/2, this.y - this.size - 10, barWidth * healthPercent, barHeight);
+        ctx.fillStyle = '#6699cc';
+        ctx.fillRect(this.x - barWidth/2, this.y - this.size - 8, barWidth * healthPercent, barHeight);
     }
 }
 
-// Projectile Class
+// Projectile Class - Simple
 class Projectile {
-    constructor(x, y, target, damage, hue) {
+    constructor(x, y, target, damage) {
         this.x = x;
         this.y = y;
         this.target = target;
         this.damage = damage;
-        this.speed = 8;
-        this.hue = hue;
-        this.trail = [];
+        this.speed = 6;
     }
 
     update() {
@@ -290,11 +225,7 @@ class Projectile {
         const dy = this.target.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        this.trail.push({x: this.x, y: this.y});
-        if (this.trail.length > 5) this.trail.shift();
-        
         if (dist < this.speed) {
-            // Hit target
             return !this.target.takeDamage(this.damage);
         }
         
@@ -305,26 +236,10 @@ class Projectile {
     }
 
     draw() {
-        // Draw trail
-        ctx.strokeStyle = `hsla(${this.hue}, 100%, 50%, 0.5)`;
-        ctx.lineWidth = 2;
+        ctx.fillStyle = '#6699cc';
         ctx.beginPath();
-        for (let i = 0; i < this.trail.length; i++) {
-            const p = this.trail[i];
-            if (i === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-        }
-        ctx.stroke();
-        
-        // Draw projectile
-        ctx.save();
-        ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
     }
 }
 
@@ -346,7 +261,7 @@ function spawnWave() {
         if (gameState.enemiesSpawned >= gameState.enemiesPerWave) {
             clearInterval(spawnInterval);
         }
-    }, 1000);
+    }, 1200);
 }
 
 // Update game
@@ -355,16 +270,11 @@ function update() {
     
     const time = Date.now();
     
-    // Update towers
     gameState.towers.forEach(tower => tower.update(time));
-    
-    // Update enemies
     gameState.enemies = gameState.enemies.filter(enemy => enemy.update());
-    
-    // Update projectiles
     gameState.projectiles = gameState.projectiles.filter(proj => proj.update());
     
-    // Check if wave is complete
+    // Check if wave complete
     if (gameState.waveInProgress && 
         gameState.enemiesSpawned >= gameState.enemiesPerWave && 
         gameState.enemies.length === 0) {
@@ -376,24 +286,19 @@ function update() {
         }, 3000);
     }
     
-    // Check game over
     if (gameState.health <= 0) {
-        endGame(false);
+        endGame();
     }
 }
 
-// Draw game
+// Draw game - Clean and simple
 function draw() {
-    // Psychedelic grid background
-    const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width);
-    grad.addColorStop(0, 'rgba(157, 0, 255, 0.1)');
-    grad.addColorStop(0.5, 'rgba(0, 255, 255, 0.05)');
-    grad.addColorStop(1, 'rgba(255, 0, 110, 0.1)');
-    ctx.fillStyle = grad;
+    // Clear with black
+    ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw grid
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)';
+    // Draw subtle grid
+    ctx.strokeStyle = 'rgba(102, 153, 204, 0.1)';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= canvas.width; i += GRID_SIZE) {
         ctx.beginPath();
@@ -408,18 +313,15 @@ function draw() {
         ctx.stroke();
     }
     
-    // Draw path with glow
-    ctx.strokeStyle = 'rgba(255, 0, 110, 0.4)';
-    ctx.lineWidth = 30;
-    ctx.shadowColor = 'rgba(255, 0, 110, 0.8)';
-    ctx.shadowBlur = 20;
+    // Draw path
+    ctx.strokeStyle = 'rgba(153, 153, 153, 0.3)';
+    ctx.lineWidth = 20;
     ctx.beginPath();
     gameState.path.forEach((p, i) => {
         if (i === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
     });
     ctx.stroke();
-    ctx.shadowBlur = 0;
     
     // Draw entities
     gameState.towers.forEach(tower => tower.draw());
@@ -435,11 +337,10 @@ canvas.addEventListener('click', (e) => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Check if clicking existing tower
+    // Check tower click
     for (const tower of gameState.towers) {
         if (tower.isClicked(x, y)) {
             if (gameState.selectedTower === tower) {
-                // Upgrade
                 tower.upgrade();
             } else {
                 gameState.selectedTower = tower;
@@ -457,12 +358,12 @@ canvas.addEventListener('click', (e) => {
         
         // Check if on path
         const onPath = gameState.path.some(p => 
-            Math.abs(p.x - gridX) < GRID_SIZE/2 && Math.abs(p.y - gridY) < GRID_SIZE/2
+            Math.abs(p.x - gridX) < 25 && Math.abs(p.y - gridY) < 25
         );
         
-        // Check if tower already there
+        // Check if tower exists
         const towerExists = gameState.towers.some(t => 
-            Math.abs(t.x - gridX) < GRID_SIZE/2 && Math.abs(t.y - gridY) < GRID_SIZE/2
+            Math.abs(t.x - gridX) < 25 && Math.abs(t.y - gridY) < 25
         );
         
         if (!onPath && !towerExists) {
@@ -502,10 +403,8 @@ function startGame() {
 }
 
 // End game
-function endGame(won) {
+function endGame() {
     gameState.isRunning = false;
-    const result = won ? "You transcended reality!" : "Reality has consumed you...";
-    document.getElementById('tripResult').textContent = result;
     document.getElementById('finalWave').textContent = gameState.wave;
     document.getElementById('finalKills').textContent = gameState.kills;
     document.getElementById('gameOver').classList.remove('hidden');

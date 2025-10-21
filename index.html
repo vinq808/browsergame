@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRIP.DEFENSE</title>
+    <title>DEFENSE.PROTOCOL</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,52 +12,52 @@
     
     <div class="container">
         <div class="header">
-            <h1 class="glitch" data-text="TRIP.DEFENSE">TRIP.DEFENSE</h1>
-            <p class="tagline">defend your consciousness // reality is melting</p>
+            <h1 class="glitch">DEFENSE.PROTOCOL</h1>
+            <p class="tagline">protect the network // entities approaching</p>
         </div>
 
         <div class="game-area">
             <canvas id="gameCanvas"></canvas>
             <div class="overlay" id="overlay">
                 <div class="modal">
-                    <h2>ENTER THE TRIP</h2>
-                    <p>Place psychedelic towers to defend your mind</p>
-                    <p class="small">Reality entities are approaching...</p>
+                    <h2>INITIALIZE</h2>
+                    <p>Place defense nodes along the network path</p>
                     <div class="controls-info">
-                        <p>💠 Click grid to place towers (Cost: 50)</p>
-                        <p>🌀 Upgrade towers by clicking them</p>
+                        <p>[ CLICK ] grid to place node (50 credits)</p>
+                        <p>[ CLICK ] node again to upgrade (75 credits)</p>
+                        <p>[ DEFEND ] against incoming data corruption</p>
                     </div>
-                    <button id="startBtn" class="start-btn">START TRIP</button>
+                    <button id="startBtn" class="start-btn">START</button>
                 </div>
             </div>
         </div>
 
         <div class="info-panel">
             <div class="stat-box">
-                <span class="label">ENERGY:</span>
+                <span class="label">CREDITS</span>
                 <span class="value energy" id="money">100</span>
             </div>
             <div class="stat-box">
-                <span class="label">WAVE:</span>
+                <span class="label">WAVE</span>
                 <span class="value wave" id="wave">1</span>
             </div>
             <div class="stat-box">
-                <span class="label">CONSCIOUSNESS:</span>
+                <span class="label">INTEGRITY</span>
                 <span class="value health" id="health">100</span>
             </div>
             <div class="stat-box">
-                <span class="label">KILLS:</span>
+                <span class="label">ELIMINATED</span>
                 <span class="value" id="kills">0</span>
             </div>
         </div>
 
         <div id="gameOver" class="game-over hidden">
             <div class="result-modal">
-                <h2>TRIP ENDED</h2>
-                <p class="trip-result" id="tripResult">Reality has won...</p>
-                <p>Wave Reached: <span id="finalWave">1</span></p>
-                <p>Entities Dissolved: <span id="finalKills">0</span></p>
-                <button id="restartBtn" class="start-btn">RE-ENTER TRIP</button>
+                <h2>CONNECTION LOST</h2>
+                <p class="trip-result" id="tripResult">Network integrity compromised</p>
+                <p>Final Wave: <span id="finalWave">1</span></p>
+                <p>Entities Eliminated: <span id="finalKills">0</span></p>
+                <button id="restartBtn" class="start-btn">RECONNECT</button>
             </div>
         </div>
     </div>
