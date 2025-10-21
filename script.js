@@ -53,11 +53,13 @@ class Tower {
         this.x = x;
         this.y = y;
         this.range = 100;
-        this.damage = 10;
+        this.damage = 30; // Tripled from 10
         this.fireRate = 600;
         this.lastFire = 0;
         this.level = 1;
         this.maxLevel = 5;
+        this.glitchOffset = 0;
+        this.glitchTimer = 0;
     }
 
     getUpgradeCost() {
@@ -72,7 +74,7 @@ class Tower {
             gameState.money -= cost;
             this.level++;
             this.range += 20;
-            this.damage += 8;
+            this.damage += 24; // Tripled from 8
             this.fireRate = Math.max(200, this.fireRate - 80);
             return true;
         }
@@ -95,6 +97,12 @@ class Tower {
     }
 
     update(time) {
+        // Glitch effect
+        this.glitchTimer++;
+        if (this.glitchTimer % 60 === 0) {
+            this.glitchOffset = Math.random() > 0.9 ? (Math.random() - 0.5) * 3 : 0;
+        }
+        
         if (time - this.lastFire >= this.fireRate) {
             const target = this.findTarget();
             if (target) {
@@ -114,7 +122,7 @@ class Tower {
         
         // Range indicator when selected
         if (gameState.selectedTower === this) {
-            ctx.strokeStyle = 'rgba(102, 153, 204, 0.4)';
+            ctx.strokeStyle = 'rgba(102, 204, 102, 0.3)';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
@@ -123,54 +131,61 @@ class Tower {
             // Show upgrade info
             if (this.level < this.maxLevel) {
                 const cost = this.getUpgradeCost();
-                ctx.fillStyle = '#6699cc';
+                ctx.fillStyle = '#66cc66';
                 ctx.font = '10px monospace';
                 ctx.textAlign = 'center';
                 ctx.fillText(`$${cost}`, this.x, this.y - size - 10);
             }
         }
         
-        // Tower body - circle
-        ctx.fillStyle = '#6699cc';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, size/2, 0, Math.PI * 2);
-        ctx.fill();
+        // Tower body - square with glitch
+        const glitchX = this.x + this.glitchOffset;
+        
+        // Main square - green
+        ctx.fillStyle = '#66cc66';
+        ctx.fillRect(glitchX - size/2, this.y - size/2, size, size);
+        
+        // Glitch layer - lighter green
+        if (this.glitchOffset !== 0) {
+            ctx.fillStyle = 'rgba(153, 255, 153, 0.5)';
+            ctx.fillRect(this.x - size/2 + 2, this.y - size/2, size, size);
+        }
         
         // Border
-        ctx.strokeStyle = '#8ab4d9';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx.strokeStyle = '#99ff99';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(glitchX - size/2, this.y - size/2, size, size);
         
         // Inner core based on level
         if (this.level > 1) {
-            ctx.fillStyle = '#4d79a3';
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, size/3, 0, Math.PI * 2);
-            ctx.fill();
+            const coreSize = size/2.5;
+            ctx.fillStyle = '#33aa33';
+            ctx.fillRect(glitchX - coreSize/2, this.y - coreSize/2, coreSize, coreSize);
         }
         
-        // Level indicator dots
-        for (let i = 0; i < this.level && i < 5; i++) {
-            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
-            const dotDist = size/2 + 4;
-            const dotX = this.x + Math.cos(angle) * dotDist;
-            const dotY = this.y + Math.sin(angle) * dotDist;
+        // Level indicator - small squares at corners
+        for (let i = 0; i < Math.min(this.level, 4); i++) {
+            const offset = size/2 + 3;
+            let dotX, dotY;
             
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
-            ctx.fill();
+            if (i === 0) { dotX = glitchX - offset; dotY = this.y - offset; }
+            else if (i === 1) { dotX = glitchX + offset; dotY = this.y - offset; }
+            else if (i === 2) { dotX = glitchX - offset; dotY = this.y + offset; }
+            else { dotX = glitchX + offset; dotY = this.y + offset; }
+            
+            ctx.fillStyle = '#99ff99';
+            ctx.fillRect(dotX - 1.5, dotY - 1.5, 3, 3);
         }
     }
 
     isClicked(mx, my) {
         const size = 16 + this.level * 2;
         const dist = Math.sqrt((this.x - mx) ** 2 + (this.y - my) ** 2);
-        return dist <= size/2 + 5;
+        return dist <= size/2 + 10;
     }
 }
 
-// Enemy Class - Bloons style
+// Enemy Class - Monochrome glitch style
 class Enemy {
     constructor() {
         this.pathIndex = 0;
@@ -181,9 +196,17 @@ class Enemy {
         this.speed = 1.2 + gameState.wave * 0.08;
         this.size = 10;
         this.reward = 10 + gameState.wave * 2;
+        this.glitchOffset = 0;
+        this.glitchTimer = 0;
     }
 
     update() {
+        // Glitch effect
+        this.glitchTimer++;
+        if (this.glitchTimer % 45 === 0) {
+            this.glitchOffset = Math.random() > 0.85 ? (Math.random() - 0.5) * 4 : 0;
+        }
+        
         if (this.pathIndex >= gameState.path.length - 1) {
             gameState.health -= 1;
             return false;
@@ -222,22 +245,30 @@ class Enemy {
         // Only draw if health > 0
         if (this.health <= 0) return;
         
-        // Enemy body - hexagon shape
-        ctx.fillStyle = '#cc3333';
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
-            const x = this.x + Math.cos(angle) * this.size;
-            const y = this.y + Math.sin(angle) * this.size;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
+        const glitchX = this.x + this.glitchOffset;
+        const glitchY = this.y + (this.glitchOffset !== 0 ? (Math.random() - 0.5) * 2 : 0);
         
-        ctx.strokeStyle = '#ff6666';
+        // Main body - white square
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(glitchX - this.size/2, glitchY - this.size/2, this.size, this.size);
+        
+        // Glitch layer - gray
+        if (this.glitchOffset !== 0) {
+            ctx.fillStyle = 'rgba(153, 153, 153, 0.6)';
+            ctx.fillRect(this.x - this.size/2 + 2, this.y - this.size/2, this.size, this.size);
+        }
+        
+        // Border - black
+        ctx.strokeStyle = '#000';
         ctx.lineWidth = 1;
-        ctx.stroke();
+        ctx.strokeRect(glitchX - this.size/2, glitchY - this.size/2, this.size, this.size);
+        
+        // Inner square if damaged
+        if (this.health < this.maxHealth) {
+            const innerSize = this.size * 0.4;
+            ctx.fillStyle = '#666';
+            ctx.fillRect(glitchX - innerSize/2, glitchY - innerSize/2, innerSize, innerSize);
+        }
         
         // Health bar only if damaged
         if (this.health < this.maxHealth) {
@@ -245,18 +276,18 @@ class Enemy {
             const barHeight = 3;
             const healthPercent = Math.max(0, this.health / this.maxHealth);
             
-            // Background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            // Background - black
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(this.x - barWidth/2, this.y - this.size - 8, barWidth, barHeight);
             
-            // Health
-            ctx.fillStyle = '#cc3333';
+            // Health - white to gray gradient
+            ctx.fillStyle = healthPercent > 0.5 ? '#fff' : '#999';
             ctx.fillRect(this.x - barWidth/2, this.y - this.size - 8, barWidth * healthPercent, barHeight);
         }
     }
 }
 
-// Projectile Class - Simple
+// Projectile Class - Green
 class Projectile {
     constructor(x, y, target, damage) {
         this.x = x;
@@ -289,14 +320,14 @@ class Projectile {
     }
 
     draw() {
-        ctx.fillStyle = '#6699cc';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
-        ctx.fill();
+        // Small green square
+        ctx.fillStyle = '#66cc66';
+        ctx.fillRect(this.x - 3, this.y - 3, 6, 6);
         
-        ctx.strokeStyle = '#8ab4d9';
+        // Lighter border
+        ctx.strokeStyle = '#99ff99';
         ctx.lineWidth = 1;
-        ctx.stroke();
+        ctx.strokeRect(this.x - 3, this.y - 3, 6, 6);
     }
 }
 
@@ -371,7 +402,7 @@ function draw() {
     }
     
     // Draw path
-    ctx.strokeStyle = 'rgba(153, 153, 153, 0.3)';
+    ctx.strokeStyle = 'rgba(102, 102, 102, 0.3)';
     ctx.lineWidth = 20;
     ctx.beginPath();
     gameState.path.forEach((p, i) => {
